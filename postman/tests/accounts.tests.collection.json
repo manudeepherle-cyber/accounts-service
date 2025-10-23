@@ -1,0 +1,636 @@
+{
+  "info": {
+    "name": "RBC Accounts Tests",
+    "description": "Comprehensive test suite for RBC Accounts API with automated assertions and validation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "rbc-accounts-tests",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "value",
+        "value": "{{api_key}}",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has correct structure', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData).to.have.property('service');",
+                  "    pm.expect(jsonData).to.have.property('version');",
+                  "    pm.expect(jsonData).to.have.property('timestamp');",
+                  "});",
+                  "",
+                  "pm.test('Service is healthy', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('healthy');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check if the service is running and healthy. No authentication required."
+          },
+          "response": []
+        }
+      ],
+      "description": "Service health and status endpoints"
+    },
+    {
+      "name": "Accounts",
+      "item": [
+        {
+          "name": "List All Accounts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains accounts array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success', true);",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    pm.expect(jsonData).to.have.property('count');",
+                  "});",
+                  "",
+                  "pm.test('At least one account exists', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "// Store first account ID for later use",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.length > 0) {",
+                  "    pm.environment.set('account_id', jsonData.data[0].id);",
+                  "    pm.environment.set('account_id_2', jsonData.data.length > 1 ? jsonData.data[1].id : jsonData.data[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/accounts",
+              "host": ["{{base_url}}"],
+              "path": ["accounts"]
+            },
+            "description": "Retrieve a list of all bank accounts"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Account by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains account details', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success', true);",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('accountNumber');",
+                  "    pm.expect(jsonData.data).to.have.property('accountType');",
+                  "    pm.expect(jsonData.data).to.have.property('balance');",
+                  "});",
+                  "",
+                  "pm.test('Account has valid type', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(['checking', 'savings', 'credit']).to.include(jsonData.data.accountType);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/accounts/{{account_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["accounts", "{{account_id}}"]
+            },
+            "description": "Retrieve detailed information about a specific account"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Account Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Error response has correct structure', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData).to.have.property('statusCode', 404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/accounts/invalid_account_id",
+              "host": ["{{base_url}}"],
+              "path": ["accounts", "invalid_account_id"]
+            },
+            "description": "Test error handling for non-existent account"
+          },
+          "response": []
+        }
+      ],
+      "description": "Account management operations"
+    },
+    {
+      "name": "Balances",
+      "item": [
+        {
+          "name": "Get Account Balance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains balance information', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success', true);",
+                  "    pm.expect(jsonData.data).to.have.property('accountId');",
+                  "    pm.expect(jsonData.data).to.have.property('balance');",
+                  "    pm.expect(jsonData.data).to.have.property('currency');",
+                  "    pm.expect(jsonData.data).to.have.property('availableBalance');",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "});",
+                  "",
+                  "pm.test('Balance is a number', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.balance).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/accounts/{{account_id}}/balance",
+              "host": ["{{base_url}}"],
+              "path": ["accounts", "{{account_id}}", "balance"]
+            },
+            "description": "Retrieve the current balance of a specific account"
+          },
+          "response": []
+        }
+      ],
+      "description": "Account balance inquiry operations"
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Get Account Transactions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains transactions array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success', true);",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    pm.expect(jsonData).to.have.property('count');",
+                  "    pm.expect(jsonData).to.have.property('filters');",
+                  "});",
+                  "",
+                  "// Store first transaction ID for later use",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.length > 0) {",
+                  "    pm.environment.set('transaction_id', jsonData.data[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/accounts/{{account_id}}/transactions",
+              "host": ["{{base_url}}"],
+              "path": ["accounts", "{{account_id}}", "transactions"]
+            },
+            "description": "Retrieve all transactions for an account"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Account Transactions - Filtered by Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Transactions match filter type', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.length > 0) {",
+                  "        jsonData.data.forEach(txn => {",
+                  "            pm.expect(txn.type).to.eql('credit');",
+                  "        });",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Filter metadata is correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.filters.type).to.eql('credit');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/accounts/{{account_id}}/transactions?type=credit",
+              "host": ["{{base_url}}"],
+              "path": ["accounts", "{{account_id}}", "transactions"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "credit"
+                }
+              ]
+            },
+            "description": "Get transactions filtered by type (credit only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Account Transactions - Date Range",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response includes date filters', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.filters).to.have.property('from');",
+                  "    pm.expect(jsonData.filters).to.have.property('to');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/accounts/{{account_id}}/transactions?from=2024-10-01T00:00:00Z&to=2024-10-15T23:59:59Z",
+              "host": ["{{base_url}}"],
+              "path": ["accounts", "{{account_id}}", "transactions"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2024-10-01T00:00:00Z"
+                },
+                {
+                  "key": "to",
+                  "value": "2024-10-15T23:59:59Z"
+                }
+              ]
+            },
+            "description": "Get transactions within a specific date range"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Transaction by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains transaction details', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success', true);",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('accountId');",
+                  "    pm.expect(jsonData.data).to.have.property('type');",
+                  "    pm.expect(jsonData.data).to.have.property('amount');",
+                  "    pm.expect(jsonData.data).to.have.property('description');",
+                  "});",
+                  "",
+                  "pm.test('Transaction type is valid', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(['debit', 'credit', 'transfer']).to.include(jsonData.data.type);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/transactions/{{transaction_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["transactions", "{{transaction_id}}"]
+            },
+            "description": "Retrieve details of a specific transaction"
+          },
+          "response": []
+        }
+      ],
+      "description": "Transaction history and details operations"
+    },
+    {
+      "name": "Transfers",
+      "item": [
+        {
+          "name": "Create Transfer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response contains transfer details', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success', true);",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "    pm.expect(jsonData.data).to.have.property('fromAccountId');",
+                  "    pm.expect(jsonData.data).to.have.property('toAccountId');",
+                  "    pm.expect(jsonData.data).to.have.property('amount');",
+                  "});",
+                  "",
+                  "pm.test('Transfer is initially queued', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.eql('queued');",
+                  "});",
+                  "",
+                  "// Store transfer ID in environment for status check",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.environment.set('transfer_id', jsonData.data.id);",
+                  "    console.log('Stored transfer_id:', jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromAccountId\": \"{{account_id}}\",\n  \"toAccountId\": \"{{account_id_2}}\",\n  \"amount\": 250.00,\n  \"description\": \"Demo transfer from Postman\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/transfers",
+              "host": ["{{base_url}}"],
+              "path": ["transfers"]
+            },
+            "description": "Create a new fund transfer between two accounts"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Transfer Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains transfer status', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success', true);",
+                  "    pm.expect(jsonData.data).to.have.property('transferId');",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "    pm.expect(jsonData.data).to.have.property('fromAccountId');",
+                  "    pm.expect(jsonData.data).to.have.property('toAccountId');",
+                  "    pm.expect(jsonData.data).to.have.property('amount');",
+                  "});",
+                  "",
+                  "pm.test('Status is valid', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(['queued', 'processing', 'processed', 'failed']).to.include(jsonData.data.status);",
+                  "});",
+                  "",
+                  "// Log the current status",
+                  "const jsonData = pm.response.json();",
+                  "console.log('Transfer Status:', jsonData.data.status);",
+                  "if (jsonData.data.processedAt) {",
+                  "    console.log('Processed At:', jsonData.data.processedAt);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/transfers/{{transfer_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["transfers", "{{transfer_id}}", "status"]
+            },
+            "description": "Check the current status of a transfer (queued → processing → processed)"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Transfer - Invalid Amount",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message mentions amount validation', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message.toLowerCase()).to.include('amount');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromAccountId\": \"{{account_id}}\",\n  \"toAccountId\": \"{{account_id_2}}\",\n  \"amount\": -100.00,\n  \"description\": \"Invalid transfer test\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/transfers",
+              "host": ["{{base_url}}"],
+              "path": ["transfers"]
+            },
+            "description": "Test validation: negative amount should fail"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Transfer - Insufficient Funds",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message mentions insufficient funds', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message.toLowerCase()).to.include('insufficient');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromAccountId\": \"{{account_id}}\",\n  \"toAccountId\": \"{{account_id_2}}\",\n  \"amount\": 999999999.00,\n  \"description\": \"Test insufficient funds\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/transfers",
+              "host": ["{{base_url}}"],
+              "path": ["transfers"]
+            },
+            "description": "Test validation: amount exceeding balance should fail"
+          },
+          "response": []
+        }
+      ],
+      "description": "Fund transfer operations and status tracking"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}
+

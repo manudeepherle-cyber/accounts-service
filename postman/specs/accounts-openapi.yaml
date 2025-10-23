@@ -1,0 +1,615 @@
+openapi: 3.1.0
+info:
+  title: RBC Accounts Service API
+  description: Demo Banking API for account management, transactions, and transfers with Postman × GitHub integration
+  version: 1.0.0
+  contact:
+    name: RBC Demo Team
+    email: demo@rbc.com
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://accounts-api-release.rbc.demo.com
+    description: Release environment
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Health
+    description: Service health and status
+  - name: Accounts
+    description: Account management operations
+  - name: Balances
+    description: Account balance inquiries
+  - name: Transactions
+    description: Transaction history and details
+  - name: Transfers
+    description: Fund transfer operations
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Check if the service is running and healthy
+      operationId: getHealth
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: RBC Accounts Service
+                  version:
+                    type: string
+                    example: 1.0.0
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: '2024-10-23T10:00:00Z'
+                  uptime:
+                    type: number
+                    example: 3600.5
+
+  /accounts:
+    get:
+      summary: List all accounts
+      description: Retrieve a list of all bank accounts
+      operationId: listAccounts
+      tags:
+        - Accounts
+      responses:
+        '200':
+          description: List of accounts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Account'
+                  count:
+                    type: integer
+                    example: 3
+                  timestamp:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /accounts/{id}:
+    get:
+      summary: Get account by ID
+      description: Retrieve detailed information about a specific account
+      operationId: getAccountById
+      tags:
+        - Accounts
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: Account details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Account'
+                  timestamp:
+                    type: string
+                    format: date-time
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /accounts/{id}/balance:
+    get:
+      summary: Get account balance
+      description: Retrieve the current balance of a specific account
+      operationId: getAccountBalance
+      tags:
+        - Balances
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: Balance retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      accountId:
+                        type: string
+                        example: acc_1001
+                      accountNumber:
+                        type: string
+                        example: '1234567890'
+                      balance:
+                        type: number
+                        format: double
+                        example: 15000.00
+                      currency:
+                        type: string
+                        example: CAD
+                      availableBalance:
+                        type: number
+                        format: double
+                        example: 15000.00
+                      status:
+                        type: string
+                        enum: [active, inactive, frozen]
+                        example: active
+                      asOf:
+                        type: string
+                        format: date-time
+                  timestamp:
+                    type: string
+                    format: date-time
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /accounts/{id}/transactions:
+    get:
+      summary: Get account transactions
+      description: Retrieve transaction history for a specific account with optional filters
+      operationId: getAccountTransactions
+      tags:
+        - Transactions
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - name: from
+          in: query
+          description: Start date for filtering transactions (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+          example: '2024-10-01T00:00:00Z'
+        - name: to
+          in: query
+          description: End date for filtering transactions (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+          example: '2024-10-31T23:59:59Z'
+        - name: type
+          in: query
+          description: Filter by transaction type
+          required: false
+          schema:
+            type: string
+            enum: [debit, credit, transfer]
+          example: credit
+      responses:
+        '200':
+          description: Transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  count:
+                    type: integer
+                    example: 5
+                  filters:
+                    type: object
+                    properties:
+                      from:
+                        type: string
+                        nullable: true
+                      to:
+                        type: string
+                        nullable: true
+                      type:
+                        type: string
+                        nullable: true
+                  timestamp:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /transactions/{id}:
+    get:
+      summary: Get transaction by ID
+      description: Retrieve details of a specific transaction
+      operationId: getTransactionById
+      tags:
+        - Transactions
+      parameters:
+        - name: id
+          in: path
+          description: Transaction ID
+          required: true
+          schema:
+            type: string
+          example: txn_5001
+      responses:
+        '200':
+          description: Transaction details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Transaction'
+                  timestamp:
+                    type: string
+                    format: date-time
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /transfers:
+    post:
+      summary: Create a transfer
+      description: Create a new fund transfer between two accounts
+      operationId: createTransfer
+      tags:
+        - Transfers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fromAccountId
+                - toAccountId
+                - amount
+                - description
+              properties:
+                fromAccountId:
+                  type: string
+                  description: Source account ID
+                  example: acc_1001
+                toAccountId:
+                  type: string
+                  description: Destination account ID
+                  example: acc_1002
+                amount:
+                  type: number
+                  format: double
+                  description: Amount to transfer (must be positive)
+                  example: 500.00
+                description:
+                  type: string
+                  description: Transfer description
+                  example: Monthly savings transfer
+      responses:
+        '201':
+          description: Transfer created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Transfer'
+                  message:
+                    type: string
+                    example: Transfer created successfully and queued for processing.
+                  timestamp:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /transfers/{id}/status:
+    get:
+      summary: Get transfer status
+      description: Check the current status of a transfer
+      operationId: getTransferStatus
+      tags:
+        - Transfers
+      parameters:
+        - name: id
+          in: path
+          description: Transfer ID
+          required: true
+          schema:
+            type: string
+          example: tfr_7001
+      responses:
+        '200':
+          description: Transfer status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      transferId:
+                        type: string
+                        example: tfr_7001
+                      status:
+                        type: string
+                        enum: [queued, processing, processed, failed]
+                        example: processed
+                      fromAccountId:
+                        type: string
+                        example: acc_1001
+                      toAccountId:
+                        type: string
+                        example: acc_1002
+                      amount:
+                        type: number
+                        format: double
+                        example: 300.00
+                      currency:
+                        type: string
+                        example: CAD
+                      createdAt:
+                        type: string
+                        format: date-time
+                      processedAt:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      estimatedCompletionTime:
+                        type: string
+                        format: date-time
+                        nullable: true
+                  timestamp:
+                    type: string
+                    format: date-time
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+
+  parameters:
+    AccountId:
+      name: id
+      in: path
+      description: Account ID
+      required: true
+      schema:
+        type: string
+      example: acc_1001
+
+  schemas:
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+          example: acc_1001
+        accountNumber:
+          type: string
+          example: '1234567890'
+        accountType:
+          type: string
+          enum: [checking, savings, credit]
+          example: checking
+        customerId:
+          type: string
+          example: cust_001
+        customerName:
+          type: string
+          example: Alice Johnson
+        balance:
+          type: number
+          format: double
+          example: 15000.00
+        currency:
+          type: string
+          example: CAD
+        status:
+          type: string
+          enum: [active, inactive, frozen]
+          example: active
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-01-15T10:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2024-10-20T14:30:00Z'
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          example: txn_5001
+        accountId:
+          type: string
+          example: acc_1001
+        type:
+          type: string
+          enum: [debit, credit, transfer]
+          example: credit
+        amount:
+          type: number
+          format: double
+          example: 5000.00
+        currency:
+          type: string
+          example: CAD
+        description:
+          type: string
+          example: Salary deposit
+        balanceAfter:
+          type: number
+          format: double
+          example: 15000.00
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-10-01T09:00:00Z'
+        metadata:
+          type: object
+          nullable: true
+          properties:
+            transferId:
+              type: string
+              example: tfr_7001
+            fromAccount:
+              type: string
+              example: acc_1001
+            toAccount:
+              type: string
+              example: acc_1002
+
+    Transfer:
+      type: object
+      properties:
+        id:
+          type: string
+          example: tfr_7001
+        fromAccountId:
+          type: string
+          example: acc_1001
+        toAccountId:
+          type: string
+          example: acc_1002
+        amount:
+          type: number
+          format: double
+          example: 300.00
+        currency:
+          type: string
+          example: CAD
+        description:
+          type: string
+          example: Transfer to savings
+        status:
+          type: string
+          enum: [queued, processing, processed, failed]
+          example: processed
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-10-10T09:59:55Z'
+        processedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2024-10-10T10:00:00Z'
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Bad Request
+        message:
+          type: string
+          example: Invalid request parameters
+        statusCode:
+          type: integer
+          example: 400
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequestError:
+      description: Bad request - Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Bad Request
+            message: Amount must be a positive number greater than 0.
+            statusCode: 400
+            timestamp: '2024-10-23T10:00:00Z'
+
+    UnauthorizedError:
+      description: Unauthorized - API key missing
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Unauthorized
+            message: API key is required. Please provide X-API-Key header.
+            statusCode: 401
+            timestamp: '2024-10-23T10:00:00Z'
+
+    ForbiddenError:
+      description: Forbidden - Invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Forbidden
+            message: Invalid API key provided.
+            statusCode: 403
+            timestamp: '2024-10-23T10:00:00Z'
+
+    NotFoundError:
+      description: Not found - Resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Not Found
+            message: Account with ID acc_9999 not found.
+            statusCode: 404
+            timestamp: '2024-10-23T10:00:00Z'
+
