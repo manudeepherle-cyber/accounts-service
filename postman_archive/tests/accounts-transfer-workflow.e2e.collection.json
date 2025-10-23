@@ -1,9 +1,9 @@
 {
   "info": {
-    "name": "RBC Accounts E2E Tests",
-    "description": "End-to-end test scenarios for complete workflows in the RBC Accounts API",
+    "name": "E2E: Accounts Transfer Workflow",
+    "description": "End-to-end test for complete transfer workflow: balance checks, transfer creation, processing verification, and balance updates",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "rbc-accounts-e2e",
+    "_postman_id": "e2e-accounts-transfer-workflow",
     "version": "1.0.0"
   },
   "auth": {

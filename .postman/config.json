@@ -1,0 +1,19 @@
+{
+  "workspace": {
+    "id": "36ffb997-819d-4cc9-b398-b4e66455069e"
+  },
+  "entities": {
+    "collections": [
+      "../postman/collections/api.postman_collection.json",
+      "../postman/collections/unit_tests.postman_collection.json",
+      "../postman/collections/accounts_transfer_test.postman_collection.json"
+    ],
+    "environments": [
+      "../postman/environments/local.postman_environment.json"
+    ],
+    "specs": [
+      "./specs/new-specification.yaml"
+    ],
+    "flows": []
+  }
+}

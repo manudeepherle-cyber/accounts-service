@@ -1,0 +1,265 @@
+{
+  "info": {
+    "_postman_id": "81d5633c-0244-4b2b-b80c-4b9c0cc71d92",
+    "name": "E2E: Successful Transfer Flow",
+    "description": "Complete happy path for a successful fund transfer with balance verification",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. List Accounts",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "",
+              "pm.test('At least 2 accounts exist', function () {",
+              "    pm.expect(jsonData.data.length).to.be.at.least(2);",
+              "});",
+              "",
+              "// Store account IDs and initial balances",
+              "if (jsonData.data && jsonData.data.length >= 2) {",
+              "    pm.environment.set('e2e_from_account', jsonData.data[0].id);",
+              "    pm.environment.set('e2e_to_account', jsonData.data[1].id);",
+              "    pm.environment.set('e2e_from_initial_balance', jsonData.data[0].balance);",
+              "    pm.environment.set('e2e_to_initial_balance', jsonData.data[1].balance);",
+              "    pm.environment.set('e2e_transfer_amount', 100.00);",
+              "    ",
+              "    console.log('Transfer Setup:');",
+              "    console.log('From:', jsonData.data[0].id, 'Balance:', jsonData.data[0].balance);",
+              "    console.log('To:', jsonData.data[1].id, 'Balance:', jsonData.data[1].balance);",
+              "    console.log('Amount:', 100.00);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/accounts",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "accounts"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. Get Source Account Balance (Before)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "const initialBalance = parseFloat(pm.environment.get('e2e_from_initial_balance'));",
+              "",
+              "pm.test('Balance matches initial value', function () {",
+              "    pm.expect(jsonData.data.balance).to.eql(initialBalance);",
+              "});",
+              "",
+              "console.log('Source account balance before transfer:', jsonData.data.balance);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/accounts/{{e2e_from_account}}/balance",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "accounts",
+            "{{e2e_from_account}}",
+            "balance"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3. Create Transfer",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "",
+              "pm.test('Transfer created successfully', function () {",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "    pm.expect(jsonData.data.status).to.eql('queued');",
+              "});",
+              "",
+              "pm.environment.set('e2e_transfer_id', jsonData.data.id);",
+              "console.log('Transfer created:', jsonData.data.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fromAccountId\": \"{{e2e_from_account}}\",\n  \"toAccountId\": \"{{e2e_to_account}}\",\n  \"amount\": {{e2e_transfer_amount}},\n  \"description\": \"E2E Success Test\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/transfers",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "transfers"
+          ]
+        }
+      }
+    },
+    {
+      "name": "4. Wait for Processing",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "setTimeout(function(){}, 2000);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "5. Verify Transfer Processed",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Transfer is processed', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data.status).to.eql('processed');",
+              "    pm.expect(jsonData.data.processedAt).to.not.be.null;",
+              "});",
+              "",
+              "console.log('Transfer processed successfully');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/transfers/{{e2e_transfer_id}}/status",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "transfers",
+            "{{e2e_transfer_id}}",
+            "status"
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. Verify Balances Updated",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Source balance decreased', function () {",
+              "    const jsonData = pm.response.json();",
+              "    const initial = parseFloat(pm.environment.get('e2e_from_initial_balance'));",
+              "    const amount = parseFloat(pm.environment.get('e2e_transfer_amount'));",
+              "    pm.expect(jsonData.data.balance).to.eql(initial - amount);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/accounts/{{e2e_from_account}}/balance",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "accounts",
+            "{{e2e_from_account}}",
+            "balance"
+          ]
+        }
+      }
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "value",
+        "value": "{{api_key}}",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      }
+    ]
+  }
+}
