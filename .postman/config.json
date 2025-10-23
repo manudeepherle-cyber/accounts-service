@@ -5,7 +5,7 @@
   "entities": {
     "collections": [
       "../postman/collections/api.postman_collection.json",
-      "../postman/collections/unit_tests.postman_collection.json"
+      "../postman/collections/tests.postman_collection.json"
     ],
     "environments": [
       "../postman/environments/local.postman_environment.json"
