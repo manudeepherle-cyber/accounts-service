@@ -1,25 +1,9 @@
 {
   "info": {
-    "name": "RBC Accounts Tests",
+    "_postman_id": "038e8642-6f72-42c3-93f4-9282a52e8ec9",
+    "name": "Accounts Tests",
     "description": "Comprehensive test suite for RBC Accounts API with automated assertions and validation",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "rbc-accounts-tests",
-    "version": "1.0.0"
-  },
-  "auth": {
-    "type": "apikey",
-    "apikey": [
-      {
-        "key": "value",
-        "value": "{{api_key}}",
-        "type": "string"
-      },
-      {
-        "key": "key",
-        "value": "X-API-Key",
-        "type": "string"
-      }
-    ]
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
@@ -58,15 +42,17 @@
               "type": "noauth"
             },
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/health",
-              "host": ["{{base_url}}"],
-              "path": ["health"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
             },
             "description": "Check if the service is running and healthy. No authentication required."
-          },
-          "response": []
+          }
         }
       ],
       "description": "Service health and status endpoints"
@@ -82,7 +68,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status code is 200', function () {",
-                  "    pm.response.to.have.status(200);",
+                  "    pm.response.to.have.status(201);",
                   "});",
                   "",
                   "pm.test('Response contains accounts array', function () {",
@@ -107,19 +93,30 @@
                 ],
                 "type": "text/javascript"
               }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript"
+              }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/accounts",
-              "host": ["{{base_url}}"],
-              "path": ["accounts"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "accounts"
+              ]
             },
             "description": "Retrieve a list of all bank accounts"
-          },
-          "response": []
+          }
         },
         {
           "name": "Get Account by ID",
@@ -153,15 +150,18 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/accounts/{{account_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["accounts", "{{account_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "accounts",
+                "{{account_id}}"
+              ]
             },
             "description": "Retrieve detailed information about a specific account"
-          },
-          "response": []
+          }
         },
         {
           "name": "Get Account Not Found",
@@ -187,15 +187,18 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/accounts/invalid_account_id",
-              "host": ["{{base_url}}"],
-              "path": ["accounts", "invalid_account_id"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "accounts",
+                "invalid_account_id"
+              ]
             },
             "description": "Test error handling for non-existent account"
-          },
-          "response": []
+          }
         }
       ],
       "description": "Account management operations"
@@ -235,15 +238,19 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/accounts/{{account_id}}/balance",
-              "host": ["{{base_url}}"],
-              "path": ["accounts", "{{account_id}}", "balance"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "accounts",
+                "{{account_id}}",
+                "balance"
+              ]
             },
             "description": "Retrieve the current balance of a specific account"
-          },
-          "response": []
+          }
         }
       ],
       "description": "Account balance inquiry operations"
@@ -283,15 +290,19 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/accounts/{{account_id}}/transactions",
-              "host": ["{{base_url}}"],
-              "path": ["accounts", "{{account_id}}", "transactions"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "accounts",
+                "{{account_id}}",
+                "transactions"
+              ]
             },
             "description": "Retrieve all transactions for an account"
-          },
-          "response": []
+          }
         },
         {
           "name": "Get Account Transactions - Filtered by Type",
@@ -324,11 +335,16 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/accounts/{{account_id}}/transactions?type=credit",
-              "host": ["{{base_url}}"],
-              "path": ["accounts", "{{account_id}}", "transactions"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "accounts",
+                "{{account_id}}",
+                "transactions"
+              ],
               "query": [
                 {
                   "key": "type",
@@ -337,8 +353,7 @@
               ]
             },
             "description": "Get transactions filtered by type (credit only)"
-          },
-          "response": []
+          }
         },
         {
           "name": "Get Account Transactions - Date Range",
@@ -363,11 +378,16 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/accounts/{{account_id}}/transactions?from=2024-10-01T00:00:00Z&to=2024-10-15T23:59:59Z",
-              "host": ["{{base_url}}"],
-              "path": ["accounts", "{{account_id}}", "transactions"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "accounts",
+                "{{account_id}}",
+                "transactions"
+              ],
               "query": [
                 {
                   "key": "from",
@@ -380,8 +400,7 @@
               ]
             },
             "description": "Get transactions within a specific date range"
-          },
-          "response": []
+          }
         },
         {
           "name": "Get Transaction by ID",
@@ -415,15 +434,18 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/transactions/{{transaction_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["transactions", "{{transaction_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "transactions",
+                "{{transaction_id}}"
+              ]
             },
             "description": "Retrieve details of a specific transaction"
-          },
-          "response": []
+          }
         }
       ],
       "description": "Transaction history and details operations"
@@ -483,12 +505,15 @@
             },
             "url": {
               "raw": "{{base_url}}/transfers",
-              "host": ["{{base_url}}"],
-              "path": ["transfers"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "transfers"
+              ]
             },
             "description": "Create a new fund transfer between two accounts"
-          },
-          "response": []
+          }
         },
         {
           "name": "Get Transfer Status",
@@ -529,15 +554,19 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/transfers/{{transfer_id}}/status",
-              "host": ["{{base_url}}"],
-              "path": ["transfers", "{{transfer_id}}", "status"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "transfers",
+                "{{transfer_id}}",
+                "status"
+              ]
             },
             "description": "Check the current status of a transfer (queued → processing → processed)"
-          },
-          "response": []
+          }
         },
         {
           "name": "Create Transfer - Invalid Amount",
@@ -573,12 +602,15 @@
             },
             "url": {
               "raw": "{{base_url}}/transfers",
-              "host": ["{{base_url}}"],
-              "path": ["transfers"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "transfers"
+              ]
             },
             "description": "Test validation: negative amount should fail"
-          },
-          "response": []
+          }
         },
         {
           "name": "Create Transfer - Insufficient Funds",
@@ -614,17 +646,35 @@
             },
             "url": {
               "raw": "{{base_url}}/transfers",
-              "host": ["{{base_url}}"],
-              "path": ["transfers"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "transfers"
+              ]
             },
             "description": "Test validation: amount exceeding balance should fail"
-          },
-          "response": []
+          }
         }
       ],
       "description": "Fund transfer operations and status tracking"
     }
   ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "value",
+        "value": "{{api_key}}",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      }
+    ]
+  },
   "variable": [
     {
       "key": "base_url",
@@ -633,4 +683,3 @@
     }
   ]
 }
-
