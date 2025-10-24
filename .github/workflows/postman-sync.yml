@@ -16,9 +16,9 @@ jobs:
       POSTMAN_ENV_ID_LOCAL: ${{ secrets.POSTMAN_ENV_ID_LOCAL }}
 
       # Paths to your local artifacts (edit if needed)
-      COLL_API_PATH: postman/collections/accounts.postman_collection.json
-      COLL_TESTS_PATH: postman/collections/accounts-tests.postman_collection.json
-      ENV_LOCAL_PATH: postman/environments/accounts-local.postman_environment.json
+      COLL_API_PATH: postman/collections/api.postman_collection.json
+      COLL_TESTS_PATH: postman/collections/tests.postman_collection.json
+      ENV_LOCAL_PATH: postman/environments/local.postman_environment.json
 
     steps:
       - uses: actions/checkout@v4
