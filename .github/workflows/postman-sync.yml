@@ -26,6 +26,20 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
+      # --- Debug ---
+      - name: Debug - Check files and jq version
+        run: |
+          echo "=== jq version ==="
+          jq --version
+          echo "=== File exists and size ==="
+          ls -lh "$COLL_API_PATH"
+          echo "=== First 10 lines of file ==="
+          head -n 10 "$COLL_API_PATH"
+          echo "=== Test jq parse ==="
+          jq . "$COLL_API_PATH" | head -n 5 || echo "jq parse failed"
+          echo "=== Test jq transformation ==="
+          jq '{collection: .}' "$COLL_API_PATH" | head -n 5 || echo "jq transformation failed"
+
       # --- Collections ---
       - name: Update API collection
         shell: bash
