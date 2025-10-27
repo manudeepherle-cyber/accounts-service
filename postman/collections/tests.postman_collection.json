@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "038e8642-6f72-42c3-93f4-9282a52e8ec9",
+    "_postman_id": "9a269c25-8fb8-4aae-bf6c-e492caa67006",
     "name": "Accounts Tests",
     "description": "Comprehensive test suite for RBC Accounts API with automated assertions and validation",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -68,7 +68,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status code is 200', function () {",
-                  "    pm.response.to.have.status(201);",
+                  "    pm.response.to.have.status(200);",
                   "});",
                   "",
                   "pm.test('Response contains accounts array', function () {",
