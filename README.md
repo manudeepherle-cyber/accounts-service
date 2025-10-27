@@ -102,6 +102,7 @@ All endpoints (except `/health`) require API key authentication via the `X-API-K
 | `GET` | `/accounts/:id` | Get account details |
 | `GET` | `/accounts/:id/balance` | Get account balance |
 | `GET` | `/accounts/:id/transactions` | Get account transactions (supports filters) |
+| `GET` | `/accounts/:id/statement` | Generate account statement for date range |
 | `GET` | `/transactions/:id` | Get transaction details |
 | `POST` | `/transfers` | Create a new transfer |
 | `GET` | `/transfers/:id/status` | Get transfer status |
@@ -111,6 +112,12 @@ All endpoints (except `/health`) require API key authentication via the `X-API-K
 - `from` - Start date (ISO 8601 format)
 - `to` - End date (ISO 8601 format)
 - `type` - Transaction type (`debit`, `credit`, `transfer`)
+
+### Query Parameters (Statement)
+
+- `from` - Start date (ISO 8601 format) **required**
+- `to` - End date (ISO 8601 format) **required**
+- `format` - Output format (`json`, `pdf`, `csv`) - default: `json`
 
 ## 🧪 Testing with Postman
 

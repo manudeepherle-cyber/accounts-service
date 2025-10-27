@@ -118,5 +118,86 @@ router.get('/:id/transactions', (req: Request, res: Response) => {
   });
 });
 
+// GET /accounts/:id/statement - Get account statement for a date range
+router.get('/:id/statement', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { from, to, format = 'json' } = req.query;
+
+  const account = getAccountById(id);
+  if (!account) {
+    res.status(404).json({
+      error: 'Not Found',
+      message: `Account with ID ${id} not found.`,
+      statusCode: 404,
+      timestamp: new Date().toISOString()
+    });
+    return;
+  }
+
+  // Validate date range
+  if (!from || !to) {
+    res.status(400).json({
+      error: 'Bad Request',
+      message: 'Both from and to date parameters are required.',
+      statusCode: 400,
+      timestamp: new Date().toISOString()
+    });
+    return;
+  }
+
+  // Validate format
+  if (format && !['json', 'pdf', 'csv'].includes(format as string)) {
+    res.status(400).json({
+      error: 'Bad Request',
+      message: 'Invalid format. Must be one of: json, pdf, csv.',
+      statusCode: 400,
+      timestamp: new Date().toISOString()
+    });
+    return;
+  }
+
+  // Get transactions for the date range
+  const txns = getAccountTransactions(id, from as string, to as string);
+
+  // Calculate summary
+  const debits = txns
+    .filter(t => t.type === 'debit')
+    .reduce((sum, t) => sum + t.amount, 0);
+  
+  const credits = txns
+    .filter(t => t.type === 'credit')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const statement = {
+    accountId: account.id,
+    accountNumber: account.accountNumber,
+    accountType: account.accountType,
+    customerName: account.customerName,
+    statementPeriod: {
+      from: from,
+      to: to
+    },
+    openingBalance: account.balance - (credits - debits), // Calculated based on current balance
+    closingBalance: account.balance,
+    currency: account.currency,
+    summary: {
+      totalDebits: debits,
+      totalCredits: credits,
+      netChange: credits - debits,
+      transactionCount: txns.length
+    },
+    transactions: txns,
+    generatedAt: new Date().toISOString(),
+    format: format as string
+  };
+
+  res.status(200).json({
+    success: true,
+    data: statement,
+    message: `Statement generated in ${format} format.`,
+    timestamp: new Date().toISOString()
+  });
+});
+
 export default router;
 
