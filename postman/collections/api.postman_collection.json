@@ -17,7 +17,7 @@
             },
             "method": "GET",
             "url": {
-              "raw": "http://localhost:3000/health",
+              "raw": "http://localhost:3000/health?dummy=dummy",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -25,6 +25,14 @@
               "port": "3000",
               "path": [
                 "health"
+              ],
+              "query": [
+                {
+                  "key": "dummy",
+                  "value": "dummy",
+                  "type": "text",
+                  "uuid": "09adf422-538d-41f5-9e86-05c08d3a16f5"
+                }
               ]
             },
             "description": "Check if the service is running and healthy"
