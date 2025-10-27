@@ -45,35 +45,104 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo "=== Step 1: Transform collection with jq ==="
           jq '{collection: .}' "$COLL_API_PATH" > /tmp/collection_api.json
-          curl -fSs -X PUT "https://api.getpostman-beta.com/collections/${POSTMAN_COLLECTION_ID_API}" \
+          echo "✓ Transformation successful. Output size: $(wc -c < /tmp/collection_api.json) bytes"
+          
+          echo "=== Step 2: Send to Postman API ==="
+          HTTP_RESPONSE=$(curl -w "\n%{http_code}" -X PUT \
+            "https://api.getpostman-beta.com/collections/${POSTMAN_COLLECTION_ID_API}" \
             -H "X-Api-Key: ${POSTMAN_API_KEY}" \
             -H "Content-Type: application/json" \
-            --data @/tmp/collection_api.json | jq -r '.collection.info.name + " updated"'
+            --data @/tmp/collection_api.json)
+          
+          HTTP_BODY=$(echo "$HTTP_RESPONSE" | head -n -1)
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n 1)
+          
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response Body:"
+          echo "$HTTP_BODY" | jq . || echo "$HTTP_BODY"
+          
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            COLLECTION_NAME=$(echo "$HTTP_BODY" | jq -r '.collection.info.name')
+            echo "✓ Successfully updated collection: $COLLECTION_NAME"
+          else
+            echo "✗ Failed to update collection"
+            exit 1
+          fi
 
       - name: Update Tests collection
         shell: bash
         run: |
           set -euo pipefail
+          echo "=== Step 1: Transform tests collection with jq ==="
           jq '{collection: .}' "$COLL_TESTS_PATH" > /tmp/collection_tests.json
-          curl -fSs -X PUT "https://api.getpostman-beta.com/collections/${POSTMAN_COLLECTION_ID_TESTS}" \
+          echo "✓ Transformation successful. Output size: $(wc -c < /tmp/collection_tests.json) bytes"
+          
+          echo "=== Step 2: Send to Postman API ==="
+          HTTP_RESPONSE=$(curl -w "\n%{http_code}" -X PUT \
+            "https://api.getpostman-beta.com/collections/${POSTMAN_COLLECTION_ID_TESTS}" \
             -H "X-Api-Key: ${POSTMAN_API_KEY}" \
             -H "Content-Type: application/json" \
-            --data @/tmp/collection_tests.json | jq -r '.collection.info.name + " updated"'
+            --data @/tmp/collection_tests.json)
+          
+          HTTP_BODY=$(echo "$HTTP_RESPONSE" | head -n -1)
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n 1)
+          
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response Body:"
+          echo "$HTTP_BODY" | jq . || echo "$HTTP_BODY"
+          
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            COLLECTION_NAME=$(echo "$HTTP_BODY" | jq -r '.collection.info.name')
+            echo "✓ Successfully updated collection: $COLLECTION_NAME"
+          else
+            echo "✗ Failed to update tests collection"
+            exit 1
+          fi
 
       # --- Environment ---
       - name: Update Local environment
         shell: bash
         run: |
           set -euo pipefail
+          echo "=== Step 1: Transform environment with jq ==="
           jq '{environment: .}' "$ENV_LOCAL_PATH" > /tmp/env_local.json
-          curl -fSs -X PUT "https://api.getpostman-beta.com/environments/${POSTMAN_ENV_ID_LOCAL}" \
+          echo "✓ Transformation successful. Output size: $(wc -c < /tmp/env_local.json) bytes"
+          
+          echo "=== Step 2: Send to Postman API ==="
+          HTTP_RESPONSE=$(curl -w "\n%{http_code}" -X PUT \
+            "https://api.getpostman-beta.com/environments/${POSTMAN_ENV_ID_LOCAL}" \
             -H "X-Api-Key: ${POSTMAN_API_KEY}" \
             -H "Content-Type: application/json" \
-            --data @/tmp/env_local.json | jq -r '.environment.name + " updated"'
+            --data @/tmp/env_local.json)
+          
+          HTTP_BODY=$(echo "$HTTP_RESPONSE" | head -n -1)
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n 1)
+          
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response Body:"
+          echo "$HTTP_BODY" | jq . || echo "$HTTP_BODY"
+          
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            ENV_NAME=$(echo "$HTTP_BODY" | jq -r '.environment.name')
+            echo "✓ Successfully updated environment: $ENV_NAME"
+          else
+            echo "✗ Failed to update environment"
+            exit 1
+          fi
 
       # --- (Optional) Verify workspace contents ---
       - name: List workspace collections (optional)
         run: |
-          curl -fSs -X GET "https://api.getpostman-beta.com/workspaces/${POSTMAN_WORKSPACE_ID}" \
-            -H "X-Api-Key: ${POSTMAN_API_KEY}" | jq -r '.workspace.collections[]?.name' || true
+          echo "=== Verifying workspace contents ==="
+          WORKSPACE_RESPONSE=$(curl -s -X GET \
+            "https://api.getpostman-beta.com/workspaces/${POSTMAN_WORKSPACE_ID}" \
+            -H "X-Api-Key: ${POSTMAN_API_KEY}")
+          
+          echo "Collections in workspace:"
+          echo "$WORKSPACE_RESPONSE" | jq -r '.workspace.collections[]?.name' || echo "Failed to list collections"
+          
+          echo ""
+          echo "Environments in workspace:"
+          echo "$WORKSPACE_RESPONSE" | jq -r '.workspace.environments[]?.name' || echo "Failed to list environments"
