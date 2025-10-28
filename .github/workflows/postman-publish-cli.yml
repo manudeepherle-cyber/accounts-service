@@ -3,7 +3,7 @@ name: Postman beta push to cloud
 on:
   push:
     branches:
-      - develop
+      - main
   workflow_dispatch:
 
 jobs:
