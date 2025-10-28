@@ -49,6 +49,32 @@ jobs:
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
         run: postman login --with-api-key "$POSTMAN_API_KEY"
+
+      # 1) Run tests locally from repo files (fail fast)
+      - name: Run Postman tests (local)
+        run: |
+          postman collection run postman/collections/tests.postman_collection.json \
+            -e postman/environments/local.postman_environment.json \
+            --bail \
+            --color \
+            --reporter-cli-show-timestamps \
+            --reporter-json-export test-results.json
+      
+      - name: Display test results summary
+        if: always()
+        run: |
+          if [ -f test-results.json ]; then
+            echo "📊 Test Results Summary:"
+            echo "======================="
+            jq -r '
+              "Total Requests: " + (.run.stats.requests.total | tostring) + "\n" +
+              "Passed Requests: " + ((.run.stats.requests.total - .run.stats.requests.failed) | tostring) + "\n" +
+              "Failed Requests: " + (.run.stats.requests.failed | tostring) + "\n" +
+              "Total Assertions: " + (.run.stats.assertions.total | tostring) + "\n" +
+              "Passed Assertions: " + ((.run.stats.assertions.total - .run.stats.assertions.failed) | tostring) + "\n" +
+              "Failed Assertions: " + (.run.stats.assertions.failed | tostring)
+            ' test-results.json
+          fi
       
       - name: Push workspace to Postman
         run: postman workspace push -y
