@@ -20,7 +20,7 @@ jobs:
 
       # Install Postman CLI first - fail fast if this doesn't work
       - name: Install Postman CLI
-        run: curl -o- "https://dl-cli.pstmn-beta.io/install/unix.sh" | sh
+        run: curl -o- "https://dl-cli.pstmn.io/install/canary/unix.sh" | sh
 
       - name: Verify Postman CLI version
         run: postman --version
