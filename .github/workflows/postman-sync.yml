@@ -40,97 +40,182 @@ jobs:
           echo "=== Test jq transformation ==="
           jq '{collection: .}' "$COLL_API_PATH" | head -n 5 || echo "jq transformation failed"
 
-      # --- Collections ---
-      - name: Update API collection
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "=== Step 1: Transform collection with jq ==="
-          jq '{collection: .}' "$COLL_API_PATH" > /tmp/collection_api.json
-          echo "✓ Transformation successful. Output size: $(wc -c < /tmp/collection_api.json) bytes"
-          
-          echo "=== Step 2: Send to Postman API ==="
-          HTTP_RESPONSE=$(curl -w "\n%{http_code}" -X PUT \
-            "https://api.getpostman-beta.com/collections/${POSTMAN_COLLECTION_ID_API}" \
-            -H "X-Api-Key: ${POSTMAN_API_KEY}" \
-            -H "Content-Type: application/json" \
-            --data @/tmp/collection_api.json)
-          
-          HTTP_BODY=$(echo "$HTTP_RESPONSE" | head -n -1)
-          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n 1)
-          
-          echo "HTTP Status: $HTTP_STATUS"
-          echo "Response Body:"
-          echo "$HTTP_BODY" | jq . || echo "$HTTP_BODY"
-          
-          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
-            COLLECTION_NAME=$(echo "$HTTP_BODY" | jq -r '.collection.info.name')
-            echo "✓ Successfully updated collection: $COLLECTION_NAME"
-          else
-            echo "✗ Failed to update collection"
-            exit 1
-          fi
-
-      - name: Update Tests collection
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "=== Step 1: Transform tests collection with jq ==="
-          jq '{collection: .}' "$COLL_TESTS_PATH" > /tmp/collection_tests.json
-          echo "✓ Transformation successful. Output size: $(wc -c < /tmp/collection_tests.json) bytes"
-          
-          echo "=== Step 2: Send to Postman API ==="
-          HTTP_RESPONSE=$(curl -w "\n%{http_code}" -X PUT \
-            "https://api.getpostman-beta.com/collections/${POSTMAN_COLLECTION_ID_TESTS}" \
-            -H "X-Api-Key: ${POSTMAN_API_KEY}" \
-            -H "Content-Type: application/json" \
-            --data @/tmp/collection_tests.json)
-          
-          HTTP_BODY=$(echo "$HTTP_RESPONSE" | head -n -1)
-          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n 1)
-          
-          echo "HTTP Status: $HTTP_STATUS"
-          echo "Response Body:"
-          echo "$HTTP_BODY" | jq . || echo "$HTTP_BODY"
-          
-          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
-            COLLECTION_NAME=$(echo "$HTTP_BODY" | jq -r '.collection.info.name')
-            echo "✓ Successfully updated collection: $COLLECTION_NAME"
-          else
-            echo "✗ Failed to update tests collection"
-            exit 1
-          fi
-
-      # --- Environment ---
-      - name: Update Local environment
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "=== Step 1: Transform environment with jq ==="
-          jq '{environment: .}' "$ENV_LOCAL_PATH" > /tmp/env_local.json
-          echo "✓ Transformation successful. Output size: $(wc -c < /tmp/env_local.json) bytes"
-          
-          echo "=== Step 2: Send to Postman API ==="
-          HTTP_RESPONSE=$(curl -w "\n%{http_code}" -X PUT \
-            "https://api.getpostman-beta.com/environments/${POSTMAN_ENV_ID_LOCAL}" \
-            -H "X-Api-Key: ${POSTMAN_API_KEY}" \
-            -H "Content-Type: application/json" \
-            --data @/tmp/env_local.json)
-          
-          HTTP_BODY=$(echo "$HTTP_RESPONSE" | head -n -1)
-          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n 1)
-          
-          echo "HTTP Status: $HTTP_STATUS"
-          echo "Response Body:"
-          echo "$HTTP_BODY" | jq . || echo "$HTTP_BODY"
-          
-          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
-            ENV_NAME=$(echo "$HTTP_BODY" | jq -r '.environment.name')
-            echo "✓ Successfully updated environment: $ENV_NAME"
-          else
-            echo "✗ Failed to update environment"
-            exit 1
-          fi
+          - name: Define helper and API base
+          shell: bash
+          run: |
+            set -euo pipefail
+            # Prefer beta; allow override via repo/organization env if needed
+            : "${POSTMAN_API_BASE:=https://api.postman-beta.com}"
+            echo "Using POSTMAN_API_BASE=${POSTMAN_API_BASE}"
+            cat > /tmp/do_request.sh <<'EOF'
+            set -euo pipefail
+            METHOD="$1"
+            URL="$2"
+            DATA_FILE="${3:-}"
+            API_KEY="${POSTMAN_API_KEY}"
+  
+            # Where to save response
+            RESP_HDR=/tmp/resp_headers.$RANDOM.txt
+            RESP_BODY=/tmp/resp_body.$RANDOM.txt
+  
+            CURL_ARGS=(-sS -L --retry 3 --retry-delay 2 --retry-all-errors --max-time 60
+                       -X "$METHOD"
+                       -H "X-Api-Key: ${API_KEY}"
+                       -H "Content-Type: application/json"
+                       -H "Accept: application/json"
+                       -D "$RESP_HDR" "$URL")
+            if [[ -n "${DATA_FILE}" ]]; then
+              CURL_ARGS+=(--data "@${DATA_FILE}")
+            fi
+  
+            # Run request
+            curl "${CURL_ARGS[@]}" -o "$RESP_BODY" || true
+  
+            # Parse status & content-type
+            STATUS=$(awk 'BEGIN{RS="\r\n\r\n"} NR==1{for(i=1;i<=NF;i++) if ($i ~ /^HTTP\/[0-9.]/) s=$i} END{print s}' "$RESP_HDR" | awk '{print $2}')
+            CT=$(grep -i '^Content-Type:' "$RESP_HDR" | tail -n1 | awk -F': *' '{print tolower($2)}' | tr -d '\r')
+  
+            echo "HTTP Status: ${STATUS}"
+            echo "Content-Type: ${CT:-<none>}"
+  
+            # If 3xx, show Location for debugging
+            if [[ "${STATUS:-0}" =~ ^3 ]]; then
+              LOC=$(grep -i '^Location:' "$RESP_HDR" | tail -n1 | awk -F': *' '{print $2}' | tr -d '\r')
+              echo "Redirected (3xx). Location: ${LOC:-<none>}"
+              echo "---- Response (first 300 bytes) ----"
+              head -c 300 "$RESP_BODY" || true
+              exit 1
+            fi
+  
+            # Print body (pretty JSON if possible, otherwise raw)
+            if [[ "${CT:-}" == application/json* ]]; then
+              if command -v jq >/dev/null 2>&1; then
+                jq . "$RESP_BODY" || cat "$RESP_BODY"
+              else
+                cat "$RESP_BODY"
+              fi
+            else
+              echo "Non-JSON body:"
+              head -c 400 "$RESP_BODY" || true
+            fi
+  
+            # Export vars for caller
+            echo "STATUS=${STATUS}" >> "$GITHUB_OUTPUT"
+            echo "BODY_FILE=${RESP_BODY}" >> "$GITHUB_OUTPUT"
+            echo "HEADERS_FILE=${RESP_HDR}" >> "$GITHUB_OUTPUT"
+            EOF
+            chmod +x /tmp/do_request.sh
+    
+          - name: Update API collection (with fallback host if needed)
+            id: update_api_coll
+            shell: bash
+            run: |
+              set -euo pipefail
+              # 1) Wrap payload
+              jq '{collection: .}' "$COLL_API_PATH" > /tmp/collection_api.json
+              echo "Payload size: $(wc -c < /tmp/collection_api.json) bytes"
+    
+              # 2) Try primary host
+              URL="${POSTMAN_API_BASE}/collections/${POSTMAN_COLLECTION_ID_API}"
+              echo "PUT $URL"
+              OUTPUT=$(/tmp/do_request.sh PUT "$URL" /tmp/collection_api.json)
+              echo "$OUTPUT"
+              source <(echo "$OUTPUT")
+    
+              # 3) If non-2xx and base is beta primary, try fallback once
+              if [[ ! "${STATUS}" =~ ^2 && "${POSTMAN_API_BASE}" == "https://api.postman-beta.com" ]]; then
+                echo "Non-2xx (${STATUS}). Trying fallback host once..."
+                POSTMAN_API_BASE="https://postman-beta-api.postman.com"
+                URL="${POSTMAN_API_BASE}/collections/${POSTMAN_COLLECTION_ID_API}"
+                echo "PUT $URL"
+                OUTPUT=$(/tmp/do_request.sh PUT "$URL" /tmp/collection_api.json)
+                echo "$OUTPUT"
+                source <(echo "$OUTPUT")
+              fi
+    
+              # 4) Fail if still not 2xx
+              if [[ ! "${STATUS}" =~ ^2 ]]; then
+                echo "✗ Failed to update API collection (status ${STATUS})"
+                exit 1
+              fi
+    
+              # 5) Extract name if JSON
+              if command -v jq >/dev/null 2>&1; then
+                NAME=$(jq -r '.collection.info.name // .collection.name // empty' "$(echo "$OUTPUT" | awk -F= '/BODY_FILE=/{print $2}')")
+                [[ -n "${NAME:-}" ]] && echo "✓ Updated collection: $NAME"
+    
+          - name: Update Tests collection
+            id: update_tests_coll
+            shell: bash
+            run: |
+              set -euo pipefail
+              jq '{collection: .}' "$COLL_TESTS_PATH" > /tmp/collection_tests.json
+              echo "Payload size: $(wc -c < /tmp/collection_tests.json) bytes"
+    
+              URL="${POSTMAN_API_BASE}/collections/${POSTMAN_COLLECTION_ID_TESTS}"
+              echo "PUT $URL"
+              OUTPUT=$(/tmp/do_request.sh PUT "$URL" /tmp/collection_tests.json)
+              echo "$OUTPUT"
+              source <(echo "$OUTPUT")
+    
+              if [[ ! "${STATUS}" =~ ^2 && "${POSTMAN_API_BASE}" == "https://api.postman-beta.com" ]]; then
+                echo "Non-2xx (${STATUS}). Trying fallback host once..."
+                POSTMAN_API_BASE="https://postman-beta-api.postman.com"
+                URL="${POSTMAN_API_BASE}/collections/${POSTMAN_COLLECTION_ID_TESTS}"
+                echo "PUT $URL"
+                OUTPUT=$(/tmp/do_request.sh PUT "$URL" /tmp/collection_tests.json)
+                echo "$OUTPUT"
+                source <(echo "$OUTPUT")
+              fi
+    
+              if [[ ! "${STATUS}" =~ ^2 ]]; then
+                echo "✗ Failed to update Tests collection (status ${STATUS})"
+                exit 1
+              fi
+              if command -v jq >/dev/null 2>&1; then
+                NAME=$(jq -r '.collection.info.name // .collection.name // empty' "$(echo "$OUTPUT" | awk -F= '/BODY_FILE=/{print $2}')")
+                [[ -n "${NAME:-}" ]] && echo "✓ Updated tests collection: $NAME"
+    
+          - name: Update Local environment
+            id: update_env
+            shell: bash
+            run: |
+              set -euo pipefail
+              jq '{environment: .}' "$ENV_LOCAL_PATH" > /tmp/env_local.json
+              echo "Payload size: $(wc -c < /tmp/env_local.json) bytes"
+    
+              URL="${POSTMAN_API_BASE}/environments/${POSTMAN_ENV_ID_LOCAL}"
+              echo "PUT $URL"
+              OUTPUT=$(/tmp/do_request.sh PUT "$URL" /tmp/env_local.json)
+              echo "$OUTPUT"
+              source <(echo "$OUTPUT")
+    
+              if [[ ! "${STATUS}" =~ ^2 && "${POSTMAN_API_BASE}" == "https://api.postman-beta.com" ]]; then
+                echo "Non-2xx (${STATUS}). Trying fallback host once..."
+                POSTMAN_API_BASE="https://postman-beta-api.postman.com"
+                URL="${POSTMAN_API_BASE}/environments/${POSTMAN_ENV_ID_LOCAL}"
+                echo "PUT $URL"
+                OUTPUT=$(/tmp/do_request.sh PUT "$URL" /tmp/env_local.json)
+                echo "$OUTPUT"
+                source <(echo "$OUTPUT")
+              fi
+    
+              if [[ ! "${STATUS}" =~ ^2 ]]; then
+                echo "✗ Failed to update environment (status ${STATUS})"
+                exit 1
+              fi
+              if command -v jq >/dev/null 2>&1; then
+                NAME=$(jq -r '.environment.name // empty' "$(echo "$OUTPUT" | awk -F= '/BODY_FILE=/{print $2}')")
+                [[ -n "${NAME:-}" ]] && echo "✓ Updated environment: $NAME"
+    
+          - name: List workspace contents (optional)
+            shell: bash
+            run: |
+              set -euo pipefail
+              URL="${POSTMAN_API_BASE}/workspaces/${POSTMAN_WORKSPACE_ID}"
+              echo "GET $URL"
+              OUTPUT=$(/tmp/do_request.sh GET "$URL")
+              echo "$OUTPUT"   # already printed formatted or raw inside helper
 
       # --- (Optional) Verify workspace contents ---
       - name: List workspace collections (optional)
