@@ -199,6 +199,82 @@
             },
             "description": "Test error handling for non-existent account"
           }
+        },
+        {
+          "name": "Get Account Statement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Account statement contract: response contains required fields in data', function () {",
+                  "    var jsonData;",
+                  "    try {",
+                  "        jsonData = pm.response.json();",
+                  "    } catch (e) {",
+                  "        pm.expect.fail('Response is not valid JSON');",
+                  "        return;",
+                  "    }",
+                  "    pm.expect(jsonData).to.be.an('object');",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "    pm.expect(jsonData.data).to.have.property('accountId');",
+                  "    pm.expect(jsonData.data).to.have.property('statementPeriod');",
+                  "    pm.expect(jsonData.data).to.have.property('transactions');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/accounts/:id/statement?from=2024-10-01&to=2024-10-27&format=json",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "accounts",
+                ":id",
+                "statement"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2024-10-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2024-10-27"
+                },
+                {
+                  "key": "format",
+                  "value": "json"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "acc_1001",
+                  "uuid": "8d66af9b-5fae-48dd-b175-460145621c77"
+                }
+              ]
+            }
+          }
         }
       ],
       "description": "Account management operations"
