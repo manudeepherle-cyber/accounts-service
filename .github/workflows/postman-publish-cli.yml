@@ -55,24 +55,44 @@ jobs:
       - name: Install Postman CLI
         run: |
           echo "Downloading Postman CLI installer..."
-          curl -fsSL --retry 3 --retry-delay 2 \
-            "https://dl-cli.pstmn-beta.io/install/unix.sh" \
-            -o /tmp/install-postman.sh
+          MAX_ATTEMPTS=5
+          ATTEMPT=1
           
-          echo "Verifying download..."
-          if [ ! -s /tmp/install-postman.sh ]; then
-            echo "Error: Downloaded file is empty"
-            exit 1
-          fi
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Attempt $ATTEMPT of $MAX_ATTEMPTS..."
+            
+            # Download with proper headers to avoid Cloudflare blocking
+            HTTP_CODE=$(curl -sS -w "%{http_code}" -o /tmp/install-postman.sh \
+              -A "Mozilla/5.0 (compatible; GitHub-Actions)" \
+              -H "Accept: text/x-shellscript, */*" \
+              "https://dl-cli.pstmn-beta.io/install/unix.sh")
+            
+            echo "HTTP Status: $HTTP_CODE"
+            
+            # Check if we got a 200 and it's a valid shell script
+            if [ "$HTTP_CODE" = "200" ] && head -1 /tmp/install-postman.sh 2>/dev/null | grep -q "^#!/bin/sh"; then
+              echo "✓ Valid shell script downloaded"
+              sh /tmp/install-postman.sh
+              exit 0
+            else
+              echo "✗ Invalid response (got HTML or error)"
+              if [ -f /tmp/install-postman.sh ]; then
+                echo "First 5 lines of downloaded file:"
+                head -5 /tmp/install-postman.sh
+              fi
+              
+              if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+                WAIT_TIME=$((ATTEMPT * 3))
+                echo "Waiting ${WAIT_TIME}s before retry..."
+                sleep $WAIT_TIME
+              fi
+            fi
+            
+            ATTEMPT=$((ATTEMPT + 1))
+          done
           
-          if head -1 /tmp/install-postman.sh | grep -q "^#!/bin/sh"; then
-            echo "Valid shell script detected, installing..."
-            sh /tmp/install-postman.sh
-          else
-            echo "Error: Downloaded file is not a valid shell script"
-            head -10 /tmp/install-postman.sh
-            exit 1
-          fi
+          echo "Failed to download Postman CLI after $MAX_ATTEMPTS attempts"
+          exit 1
 
       - name: Verify Postman CLI version
         run: postman --version
