@@ -18,8 +18,29 @@ jobs:
           clean: true
           ref: ${{ github.ref }}
 
+      # - name: Install Postman CLI
+      #   run: curl -o- "https://dl-cli.pstmn-beta.io/install/unix.sh" | sh
       - name: Install Postman CLI
-        run: curl -o- "https://dl-cli.pstmn-beta.io/install/unix.sh" | sh
+        run: |
+          echo "Downloading Postman CLI installer..."
+          curl -fsSL --retry 3 --retry-delay 2 \
+            "https://dl-cli.pstmn-beta.io/install/unix.sh" \
+            -o /tmp/install-postman.sh
+          
+          echo "Verifying download..."
+          if [ ! -s /tmp/install-postman.sh ]; then
+            echo "Error: Downloaded file is empty"
+            exit 1
+          fi
+          
+          if head -1 /tmp/install-postman.sh | grep -q "^#!/bin/sh"; then
+            echo "Valid shell script detected, installing..."
+            sh /tmp/install-postman.sh
+          else
+            echo "Error: Downloaded file is not a valid shell script"
+            head -10 /tmp/install-postman.sh
+            exit 1
+          fi
 
       - name: Verify Postman CLI version
         run: postman --version
