@@ -56,7 +56,7 @@ jobs:
           postman collection run postman/collections/tests.postman_collection.json \
             -e postman/environments/local.postman_environment.json \
             --bail \
-            --color \
+            --color on \
             --reporter-cli-show-timestamps \
             --reporter-json-export test-results.json
       
