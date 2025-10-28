@@ -126,44 +126,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Transaction"
-                  
-  /accounts/{id}/statement:
-    get:
-      tags: [Accounts]
-      summary: Get Account Statement
-      description: Generate a statement for a specific account within a date range.
-      operationId: getAccountStatement
-      parameters:
-        - $ref: "#/components/parameters/AccountId"
-        - name: from
-          in: query
-          description: Statement start date (ISO 8601).
-          required: true
-          schema: { type: string, format: date }
-        - name: to
-          in: query
-          description: Statement end date (ISO 8601).
-          required: true
-          schema: { type: string, format: date }
-        - name: format
-          in: query
-          description: Statement format.
-          required: false
-          schema:
-            type: string
-            enum: [json, pdf, csv]
-            default: json
-      responses:
-        "200":
-          description: Statement generated successfully.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AccountStatement"
-        "400":
-          description: Bad request - missing required parameters or invalid format.
-        "404":
-          description: Account not found.
 
   /transactions/{id}:
     get:
