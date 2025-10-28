@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "c8737719-4679-4a95-9c81-f73eee08426a",
+    "_postman_id": "1f00b97f-e3d6-426e-9504-1cbef82be277",
     "name": "Accounts API",
-    "description": "Auto-generated from OpenAPI spec - Pure API routes without tests",
+    "description": "Pure API routes without tests",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
