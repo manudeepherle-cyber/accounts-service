@@ -1,5 +1,5 @@
 # .github/workflows/postman-sync.yml
-name: "Postman - Publish collections & env on main"
+name: "Postman - Publish"
 on:
   push:
     branches: [ main ]
@@ -8,17 +8,19 @@ jobs:
   publish-to-postman:
     runs-on: ubuntu-latest
     env:
-      # Secrets you already added
+      # Vars already added to github secrets
       POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
       POSTMAN_WORKSPACE_ID: ${{ secrets.POSTMAN_WORKSPACE_ID }}
       POSTMAN_COLLECTION_ID_API: ${{ secrets.POSTMAN_COLLECTION_ID_API }}
       POSTMAN_COLLECTION_ID_TESTS: ${{ secrets.POSTMAN_COLLECTION_ID_TESTS }}
       POSTMAN_ENV_ID_LOCAL: ${{ secrets.POSTMAN_ENV_ID_LOCAL }}
 
-      # Paths to your local artifacts (edit if needed)
+      # Paths to local artifacts (collections and environments)
       COLL_API_PATH: postman/collections/api.postman_collection.json
       COLL_TESTS_PATH: postman/collections/tests.postman_collection.json
       ENV_LOCAL_PATH: postman/environments/local.postman_environment.json
+      # TODO: Implement the spec flow as well
+      OPENAPI_SPEC_PATH: postman/specs/accounts-openapi.yaml
 
     steps:
       - uses: actions/checkout@v4
@@ -27,6 +29,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y jq
 
       # --- Debug ---
+        # TODO: Debug should just check if all the files are there and not empty
       - name: Debug - Check files and jq version
         run: |
           echo "=== jq version ==="
