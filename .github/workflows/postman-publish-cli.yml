@@ -30,58 +30,58 @@ jobs:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
         run: postman login --with-api-key "$POSTMAN_API_KEY"
 
-      # - name: Set up Node.js
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: '20'
-      #     cache: 'npm'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-      # - name: Install dependencies
-      #   run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-      # - name: Build application
-      #   run: npm run build
+      - name: Build application
+        run: npm run build
 
-      # - name: Start server in background
-      #   run: |
-      #     npm start &
-      #     echo "SERVER_PID=$!" >> $GITHUB_ENV
-      #     echo "Started server with PID $!"
+      - name: Start server in background
+        run: |
+          npm start &
+          echo "SERVER_PID=$!" >> $GITHUB_ENV
+          echo "Started server with PID $!"
 
-      # - name: Wait for server to be ready
-      #   run: |
-      #     echo "Waiting for server to start..."
-      #     for i in {1..30}; do
-      #       if curl -f http://localhost:3000/health >/dev/null 2>&1 || curl -f http://localhost:3000 >/dev/null 2>&1; then
-      #         echo "Server is ready!"
-      #         exit 0
-      #       fi
-      #       echo "Attempt $i: Server not ready yet..."
-      #       sleep 2
-      #     done
-      #     echo "Server failed to start in time"
-      #     exit 1
+      - name: Wait for server to be ready
+        run: |
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3000/health >/dev/null 2>&1 || curl -f http://localhost:3000 >/dev/null 2>&1; then
+              echo "Server is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: Server not ready yet..."
+            sleep 2
+          done
+          echo "Server failed to start in time"
+          exit 1
 
-      # # Run tests locally from repo files (fail fast)
-      # - name: Run Postman tests (local)
-      #   run: |
-      #     postman collection run postman/collections/tests.postman_collection.json \
-      #       -e postman/environments/local.postman_environment.json \
-      #       --bail \
-      #       --color on \
-      #       --reporter-cli-show-timestamps \
-      #       --reporter-json-export test-results.json
+      # Run tests locally from repo files (fail fast)
+      - name: Run Postman tests (local)
+        run: |
+          postman collection run postman/collections/tests.postman_collection.json \
+            -e postman/environments/local.postman_environment.json \
+            --bail \
+            --color on \
+            --reporter-cli-show-timestamps \
+            --reporter-json-export test-results.json
       
       - name: Push workspace to Postman
         run: postman workspace push -y
 
-      # - name: Stop server
-      #   if: always()
-      #   run: |
-      #     if [ -n "$SERVER_PID" ]; then
-      #       echo "Stopping server (PID: $SERVER_PID)..."
-      #       kill $SERVER_PID || true
-      #     else
-      #       echo "No server PID found, attempting to kill by port..."
-      #       pkill -f "node dist/index.js" || true
-      #     fi
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -n "$SERVER_PID" ]; then
+            echo "Stopping server (PID: $SERVER_PID)..."
+            kill $SERVER_PID || true
+          else
+            echo "No server PID found, attempting to kill by port..."
+            pkill -f "node dist/index.js" || true
+          fi
